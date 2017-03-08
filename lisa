@@ -1,0 +1,147 @@
+#!/usr/bin/env node
+
+// Escrito por el Inrascable Pereira (inrascable@gmail.com)
+// según su recuerdo de la experiencia Lisa en los 90's.
+//
+// Detrás de un gran poder, existe una gran responsabilidad,
+// así que no roles este programa a lo pendejo (y está en github ja)
+// o la cagues escribiendo mal las pinches respuestas, balconeándote.
+//
+// ¡PRACTICA usarlo antes de presentarlo frente a los demás!
+//
+// @author  inrascable@gmail.com
+// @date    2017-03-08
+// @version 1.0
+
+// POR HACER:
+// 1) Falta manejar el caso en que no han cerrado respuesta con "."
+// y presionan ENTER. Por ahora se hace un cagadero, así que no hay que olvidar
+// cerrar la respuesta.
+//
+// 2) No parece estar funcionan BACKSPACE para borrar parte de la respuesta.
+// Yo digo que el 'slice' está bien, pero ahí guáchenlo.
+
+var stdin = process.stdin;
+stdin.setRawMode( true );
+stdin.resume();
+stdin.setEncoding( 'utf8' );
+
+var caracter;
+var posicion = 0;
+var respondiendo = false;
+var frase = "Lisa, favor de responder a la siguiente pregunta:";
+var respuesta = '';
+var preguntando = false;
+var intervalo_espera;
+
+var respuestas = [];
+respuestas[0] = "No me siento cómoda contigo.";
+respuestas[1] = "No pienso responder esa pregunta.";
+respuestas[2] = "No tengo animos para responder eso";
+respuestas[3] = "No quiero responderte.";
+respuestas[4] = "No te tengo mucha confianza.";
+
+function confirma() {
+  preguntando = false;
+  respuesta = '';
+  process.stdout.write("\n");
+  process.stdout.write("Deseas hacer una pregunta? ");
+}
+
+function waiting() {
+  var i = 0;  // contador de puntos
+  process.stdout.write("\n");
+  intervalo_espera = setInterval(function() {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    //i = (i + 1) % 4; // tres puntos
+    i = (i + 1) % 10; // diez puntos
+    var dots = new Array(i + 1).join(".");
+    process.stdout.write(dots);
+  }, 300);
+}
+
+function responde() {
+  if (respuesta == '') {
+    process.stdout.write("\n" + respuestas[Math.floor(Math.random() * (respuestas.length - 1))] + "\n");
+    confirma();
+  } else {
+    process.stdout.write("\n" + respuesta + "\n");
+    confirma();
+  }
+}
+
+// -----------------------------------------------------------------------------
+// INICIA APP
+
+console.log("Bienvenido, mi nombre es Lisa");
+confirma();
+
+stdin.on( 'data', function( key ){
+  // CTRL-C para salir
+  if ( key === '\u0003' ) {
+    process.exit();
+  }
+
+  // Teclas S y N para hacer/terminar preguntas
+  if (key === 's' && !preguntando) {
+    preguntando = true;
+    key = '';
+    process.stdout.write("Sí");
+    process.stdout.write("\n" + "Teclea tu pregunta - ");
+  }
+
+  if (key === 'n' && !preguntando) {
+    process.stdout.write("No");
+    console.log("\n" + "Adiós.");
+    process.exit();
+  }
+
+  // Si se eligió hacer una pregunta...
+  if (preguntando) {
+    // punto para comenzar el registro de respuesta
+    if (key == '.') {
+      respondiendo = !respondiendo;
+    }
+
+    // procesa...
+    if (respondiendo) {
+      caracter = frase[posicion];
+      process.stdout.write(caracter);
+      if (key !== '.') {
+        respuesta += key;
+      }
+      posicion += 1;
+    } else {
+      if (key !== '.') {
+        process.stdout.write(key);
+      } else {
+        caracter = frase[posicion];
+        process.stdout.write(caracter);
+        posicion = 0;
+      }
+    }
+
+    // Tecla ENTER
+    if (key === '\u000D') {
+      waiting();
+      setTimeout(function() {
+        clearInterval(intervalo_espera);
+        responde();
+      }, Math.floor(Math.random() * 5000)); // random de 10 seg.
+    }
+
+    // Tecla BACKSPACE
+    if (key === '\u007F') {
+      if (!respondiendo) {
+        process.stdout.write("\b\b");
+        process.stdout.write("  ");
+        process.stdout.write("\b\b");
+      } else {
+        //respuesta = respuesta.substring(0, respuesta.length - 1);
+        respuesta = respuesta.slice(0, -1);
+      }
+    }
+  }
+
+});
